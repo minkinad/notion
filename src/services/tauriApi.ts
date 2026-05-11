@@ -6,7 +6,7 @@ import type {
   PageRecord,
   WorkspaceContextInput,
   WorkspaceSnapshot,
-} from '../types/domain';
+} from '../types/domain.js';
 
 export async function bootstrapWorkspace(): Promise<WorkspaceSnapshot> {
   return invoke<WorkspaceSnapshot>('bootstrap_workspace');

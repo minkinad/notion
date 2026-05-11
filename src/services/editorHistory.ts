@@ -1,5 +1,5 @@
-import type { BlockRecord } from '../types/domain';
-import { cloneBlocks } from '../utils/blocks';
+import type { BlockRecord } from '../types/domain.js';
+import { cloneBlocks } from '../utils/blocks.js';
 
 const HISTORY_LIMIT = 60;
 

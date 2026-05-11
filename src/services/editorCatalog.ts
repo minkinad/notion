@@ -1,4 +1,4 @@
-import type { BlockType } from '../types/domain';
+import type { BlockType } from '../types/domain.js';
 
 export interface SlashCommandItem {
   type: BlockType;

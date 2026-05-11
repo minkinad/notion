@@ -1,4 +1,4 @@
-import type { BlockInput, BlockRecord, BlockType } from '../types/domain';
+import type { BlockInput, BlockRecord, BlockType } from '../types/domain.js';
 
 export function createId(prefix = 'id'): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {

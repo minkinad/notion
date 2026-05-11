@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "types": [],
+    "outDir": ".test-dist",
+    "rootDir": "."
+  },
+  "include": [
+    "tests/**/*.ts",
+    "src/services/editorCatalog.ts",
+    "src/services/editorHistory.ts",
+    "src/services/pageTree.ts",
+    "src/utils/blocks.ts",
+    "src/types/domain.ts"
+  ]
+}

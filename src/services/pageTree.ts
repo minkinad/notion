@@ -1,4 +1,4 @@
-import type { PageRecord, PageTreeNode } from '../types/domain';
+import type { PageRecord, PageTreeNode } from '../types/domain.js';
 
 export function sortPages(a: PageRecord, b: PageRecord): number {
   if (a.position !== b.position) {
