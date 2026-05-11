@@ -1,6 +1,24 @@
 # Noir Note
 
-Desktop-first local workspace in the spirit of Notion.
+[![CI](https://github.com/minkinad/notion/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/minkinad/notion/actions/workflows/ci.yml)
+![Tauri](https://img.shields.io/badge/Tauri-2-black)
+![React](https://img.shields.io/badge/React-19-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-black)
+![SQLite](https://img.shields.io/badge/SQLite-local-black)
+
+Desktop-first local workspace in the spirit of Notion: strict, minimal, offline-first, and built for serious writing and knowledge work.
+
+## Overview
+
+Noir Note is a native desktop knowledge workspace with a custom Tauri shell, a block editor, nested pages, local SQLite persistence, and a structure that can grow toward sync, accounts, collaboration, exports, and plugins.
+
+The current implementation is optimized for:
+
+- fast local startup;
+- keyboard-first editing;
+- low visual noise;
+- predictable persistence;
+- clear separation between shell, UI, editor logic, and data layer.
 
 ## Stack
 
@@ -8,6 +26,15 @@ Desktop-first local workspace in the spirit of Notion.
 - React 19
 - TypeScript
 - SQLite via `rusqlite`
+
+## Product scope
+
+- Native desktop window for macOS, Windows, and Linux via Tauri
+- Custom title bar and local-first workflow
+- Sidebar with nested pages, search, and recent documents
+- Block editor with slash commands, drag and drop, undo/redo, and autosave
+- SQLite storage with migrations and repository-style data access
+- Window state persistence and last-opened document restore
 
 ## Features
 
@@ -20,6 +47,42 @@ Desktop-first local workspace in the spirit of Notion.
 - Local SQLite persistence with migrations
 - Last opened page persistence
 - Native window state persistence
+
+## Architecture
+
+Frontend:
+
+- `src/components`: desktop UI, editor, sidebar, and empty states
+- `src/hooks`: workspace orchestration, hotkeys, and window state persistence
+- `src/services`: pure logic for page tree, editor history, slash catalog, and Tauri bridge
+- `src/types`: strict domain models
+- `src/utils`: editor and block helpers
+
+Desktop and persistence:
+
+- `src-tauri/src/lib.rs`: Tauri bootstrap and command registration
+- `src-tauri/src/db`: SQLite migrations and repository layer
+- `src-tauri/migrations`: schema migrations for `pages`, `blocks`, and `settings`
+
+This split is intentional: UI remains replaceable, editor logic stays mostly pure, and the data layer is already shaped for future sync and account-backed storage.
+
+## Project structure
+
+```text
+.
+├── src
+│   ├── components
+│   ├── hooks
+│   ├── services
+│   ├── types
+│   └── utils
+├── src-tauri
+│   ├── migrations
+│   └── src
+│       └── db
+├── tests
+└── .github/workflows
+```
 
 ## Development
 
@@ -41,10 +104,17 @@ Run the desktop app:
 npm run tauri:dev
 ```
 
-Run local quality checks:
+## Quality checks
+
+Typecheck, tests, and production frontend build:
 
 ```bash
 npm run check
+```
+
+Run local quality checks:
+
+```bash
 cargo fmt --manifest-path src-tauri/Cargo.toml --check
 ```
 
@@ -60,6 +130,33 @@ CI runs:
 - `cargo fmt --check`
 - `cargo check`
 
+## Keyboard UX
+
+- `Ctrl/Cmd + K`: focus page search
+- `Ctrl/Cmd + N`: create page
+- `Ctrl/Cmd + Z`: undo
+- `Ctrl/Cmd + Shift + Z`: redo
+- `Type /`: open block command flow
+- `Alt + ArrowUp/ArrowDown`: move block
+
+## Data model
+
+SQLite tables:
+
+- `pages`: tree structure, order, timestamps
+- `blocks`: page-scoped ordered content blocks
+- `settings`: recent pages, last opened page, and app-level state
+
+This keeps the local model simple while leaving room for:
+
+- authentication and remote identities;
+- cloud sync;
+- real-time collaboration;
+- permissions;
+- exports to Markdown/PDF;
+- plugin hooks;
+- database-style views.
+
 ## Linux prerequisites
 
 Tauri on Linux needs system packages for GTK/WebKit and `pkg-config`.
@@ -68,3 +165,11 @@ Typical Debian/Ubuntu setup:
 ```bash
 sudo apt install pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev patchelf
 ```
+
+## Roadmap
+
+- page tree reordering and structural drag and drop
+- markdown and PDF export
+- sync engine and account layer
+- collaboration-ready document operations
+- plugin and command extension points
