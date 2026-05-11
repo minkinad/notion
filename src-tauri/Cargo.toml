@@ -20,3 +20,9 @@ serde_json = "1.0.145"
 tauri = { version = "2.9.1", features = [] }
 tauri-plugin-window-state = "2.4.0"
 thiserror = "2.0.17"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

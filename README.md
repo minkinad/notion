@@ -41,11 +41,24 @@ Run the desktop app:
 npm run tauri:dev
 ```
 
+Run local quality checks:
+
+```bash
+npm run check
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+```
+
 ## Production build
 
 ```bash
 npm run tauri:build
 ```
+
+CI runs:
+
+- `npm run check`
+- `cargo fmt --check`
+- `cargo check`
 
 ## Linux prerequisites
 
