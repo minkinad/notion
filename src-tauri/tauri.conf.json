@@ -31,6 +31,38 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all"
+    "targets": "all",
+    "publisher": "minkinad",
+    "homepage": "https://github.com/minkinad/notion",
+    "category": "Productivity",
+    "shortDescription": "Minimalist local-first knowledge workspace for notes and documents.",
+    "longDescription": "Noir Note is a desktop-first knowledge workspace with nested pages, a block editor, autosave, local SQLite persistence, and a strict black-and-white interface designed for focused writing and serious knowledge work.",
+    "copyright": "Copyright (c) 2026 minkinad",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "useLocalToolsDir": true,
+    "windows": {
+      "allowDowngrades": false,
+      "webviewInstallMode": {
+        "type": "embedBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["English"],
+        "displayLanguageSelector": false,
+        "compression": "lzma",
+        "startMenuFolder": "Noir Note"
+      },
+      "wix": {
+        "upgradeCode": "e768c5d5-f33d-4d5f-bd54-ca4939217848",
+        "language": "en-US"
+      }
+    }
   }
 }

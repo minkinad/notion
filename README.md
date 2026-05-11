@@ -124,11 +124,28 @@ cargo fmt --manifest-path src-tauri/Cargo.toml --check
 npm run tauri:build
 ```
 
+Windows installers from a Windows machine:
+
+```bash
+npm run tauri:build:windows
+```
+
+Windows NSIS installer only:
+
+```bash
+npm run tauri:build:windows:nsis
+```
+
 CI runs:
 
 - `npm run check`
 - `cargo fmt --check`
 - `cargo check`
+
+Release automation:
+
+- `.github/workflows/windows-build.yml`: validates that the app bundles on Windows
+- `.github/workflows/windows-release.yml`: creates draft Windows releases from `v*` tags
 
 ## Keyboard UX
 
@@ -173,3 +190,10 @@ sudo apt install pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev patc
 - sync engine and account layer
 - collaboration-ready document operations
 - plugin and command extension points
+
+## Windows distribution notes
+
+- The repository is configured to ship Windows installers via both `NSIS` (`-setup.exe`) and `WiX` (`.msi`).
+- NSIS is configured for `currentUser` installs to reduce elevation friction.
+- WiX uses a fixed `upgradeCode`, so future releases upgrade in place instead of installing as a separate app.
+- WebView2 is bundled via the embedded bootstrapper mode, which avoids a hard dependency on a live internet connection during install while keeping installer size reasonable.
