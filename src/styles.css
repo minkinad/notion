@@ -281,6 +281,13 @@ textarea {
   background: rgba(17, 17, 17, 0.04);
 }
 
+.page-tree-item__main {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
 .page-tree-item__button,
 .search-result {
   display: flex;
@@ -291,6 +298,10 @@ textarea {
   border-radius: 12px;
   padding: 0 12px 0 0;
   color: inherit;
+}
+
+.page-tree-item__button {
+  min-width: 0;
 }
 
 .page-tree-item__bullet {
@@ -309,6 +320,7 @@ textarea {
 
 .page-tree-item__input {
   font-size: 14px;
+  min-width: 0;
 }
 
 .page-tree-item__actions {

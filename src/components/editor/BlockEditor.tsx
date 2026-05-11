@@ -54,7 +54,15 @@ export function BlockEditor({ pageId, blocks, onBlocksChange }: BlockEditorProps
 
   useEffect(() => {
     setFocusedBlockId(blocks[0]?.id ?? null);
-  }, [blocks, pageId]);
+  }, [pageId]);
+
+  useEffect(() => {
+    if (focusedBlockId && blocks.some((block) => block.id === focusedBlockId)) {
+      return;
+    }
+
+    setFocusedBlockId(blocks[0]?.id ?? null);
+  }, [blocks, focusedBlockId]);
 
   const nextFocus = (blockId: string) => {
     setFocusedBlockId(blockId);
@@ -97,8 +105,8 @@ export function BlockEditor({ pageId, blocks, onBlocksChange }: BlockEditorProps
         ? {
             ...block,
             type,
-            content: type === 'divider' ? '' : '',
-            checked: false,
+            content: type === 'divider' ? '' : block.content.replace(/^\/.*/, ''),
+            checked: type === 'todo' ? block.checked : false,
           }
         : block,
     );

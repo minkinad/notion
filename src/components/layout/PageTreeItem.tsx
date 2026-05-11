@@ -32,12 +32,16 @@ export function PageTreeItem({
         className={`page-tree-item__row ${isActive ? 'page-tree-item__row--active' : ''}`}
         style={{ paddingLeft: `${14 + depth * 14}px` }}
       >
-        <button
-          type="button"
-          className="page-tree-item__button"
-          onClick={() => onSelectPage(node.page.id)}
-        >
-          <span className="page-tree-item__bullet" />
+        <div className="page-tree-item__main">
+          <button
+            type="button"
+            className="page-tree-item__button"
+            onClick={() => onSelectPage(node.page.id)}
+          >
+            <span className="page-tree-item__bullet" />
+            {!isEditing ? <span className="page-tree-item__title">{node.page.title}</span> : null}
+          </button>
+
           {isEditing ? (
             <input
               autoFocus
@@ -61,10 +65,8 @@ export function PageTreeItem({
                 }
               }}
             />
-          ) : (
-            <span className="page-tree-item__title">{node.page.title}</span>
-          )}
-        </button>
+          ) : null}
+        </div>
 
         <div className="page-tree-item__actions">
           <button

@@ -19,7 +19,14 @@ export function TitleBar({ pageTitle, saveState, sidebarOpen, onToggleSidebar }:
     void appWindow.isMaximized().then(setIsMaximized);
   }, []);
 
-  const saveLabel = saveState === 'saving' ? 'Saving' : saveState === 'saved' ? 'Saved' : 'Offline';
+  const saveLabel =
+    saveState === 'saving'
+      ? 'Saving'
+      : saveState === 'saved'
+        ? 'Saved'
+        : saveState === 'error'
+          ? 'Save failed'
+          : 'Offline';
 
   return (
     <header className="titlebar" data-tauri-drag-region>

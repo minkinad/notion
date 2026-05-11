@@ -254,6 +254,7 @@ function reducer(state: WorkspaceState, action: WorkspaceAction): WorkspaceState
       return {
         ...state,
         saveState: action.payload,
+        errorMessage: action.payload === 'error' ? state.errorMessage : null,
       };
 
     case 'set-load-error':
@@ -357,6 +358,7 @@ export function useWorkspace() {
     const timeoutId = window.setTimeout(async () => {
       try {
         await renamePageRequest(pageId, title.trim() || 'Untitled');
+        dispatch({ type: 'set-save-state', payload: 'saved' });
       } catch (error) {
         dispatch({
           type: 'set-save-error',
@@ -419,6 +421,7 @@ export function useWorkspace() {
 
   const renamePage = useCallback(
     (pageId: string, title: string) => {
+      dispatch({ type: 'set-save-state', payload: 'saving' });
       dispatch({
         type: 'rename-page-local',
         payload: {

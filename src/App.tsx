@@ -5,6 +5,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { TitleBar } from './components/layout/TitleBar';
 import { EmptyState } from './components/ui/EmptyState';
 import { useHotkeys } from './hooks/useHotkeys';
+import { useWindowStatePersistence } from './hooks/useWindowStatePersistence';
 import { useWorkspace } from './hooks/useWorkspace';
 
 export default function App() {
@@ -12,6 +13,8 @@ export default function App() {
   const searchRef = useRef<HTMLInputElement | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const deferredQuery = useDeferredValue(workspace.state.searchQuery);
+
+  useWindowStatePersistence();
 
   useHotkeys([
     {

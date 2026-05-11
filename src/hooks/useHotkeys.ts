@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 
 interface Hotkey {
   key: string;
@@ -10,22 +10,33 @@ interface Hotkey {
 }
 
 export function useHotkeys(hotkeys: Hotkey[]): void {
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      for (const hotkey of hotkeys) {
-        const isMeta = hotkey.meta === undefined || hotkey.meta === event.metaKey;
-        const isCtrl = hotkey.ctrl === undefined || hotkey.ctrl === event.ctrlKey;
-        const isShift = hotkey.shift === undefined || hotkey.shift === event.shiftKey;
-        const isAlt = hotkey.alt === undefined || hotkey.alt === event.altKey;
-        const isKey = event.key.toLowerCase() === hotkey.key.toLowerCase();
+  const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
+    const target = event.target;
+    if (
+      target instanceof HTMLElement &&
+      (target.isContentEditable ||
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT')
+    ) {
+      return;
+    }
 
-        if (isMeta && isCtrl && isShift && isAlt && isKey) {
-          hotkey.handler(event);
-        }
+    for (const hotkey of hotkeys) {
+      const isMeta = hotkey.meta === undefined || hotkey.meta === event.metaKey;
+      const isCtrl = hotkey.ctrl === undefined || hotkey.ctrl === event.ctrlKey;
+      const isShift = hotkey.shift === undefined || hotkey.shift === event.shiftKey;
+      const isAlt = hotkey.alt === undefined || hotkey.alt === event.altKey;
+      const isKey = event.key.toLowerCase() === hotkey.key.toLowerCase();
+
+      if (isMeta && isCtrl && isShift && isAlt && isKey) {
+        hotkey.handler(event);
       }
-    };
+    }
+  });
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hotkeys]);
+  useEffect(() => {
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onKeyDown]);
 }
