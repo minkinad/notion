@@ -100,6 +100,7 @@ export default function App() {
         <Sidebar
           ref={searchRef}
           pagesById={workspace.state.pagesById}
+          blocksByPageId={workspace.state.blocksByPageId}
           activePageId={workspace.state.activePageId}
           recentPageIds={workspace.state.recentPageIds}
           searchQuery={workspace.state.searchQuery}

@@ -1,12 +1,13 @@
 import { forwardRef } from 'react';
 
 import { buildPagePath, buildPageTree, searchPages } from '../../services/pageTree';
-import type { PageRecord } from '../../types/domain';
+import type { BlockRecord, PageRecord } from '../../types/domain';
 import { EmptyState } from '../ui/EmptyState';
 import { PageTreeItem } from './PageTreeItem';
 
 interface SidebarProps {
   pagesById: Record<string, PageRecord>;
+  blocksByPageId: Record<string, BlockRecord[]>;
   activePageId: string | null;
   recentPageIds: string[];
   searchQuery: string;
@@ -23,6 +24,7 @@ interface SidebarProps {
 export const Sidebar = forwardRef<HTMLInputElement, SidebarProps>(function Sidebar(
   {
     pagesById,
+    blocksByPageId,
     activePageId,
     recentPageIds,
     searchQuery,
@@ -38,7 +40,7 @@ export const Sidebar = forwardRef<HTMLInputElement, SidebarProps>(function Sideb
   searchRef,
 ) {
   const tree = buildPageTree(pagesById);
-  const searchResults = searchPages(pagesById, searchResultsQuery);
+  const searchResults = searchPages(pagesById, blocksByPageId, searchResultsQuery);
   const recentPages = recentPageIds.map((pageId) => pagesById[pageId]).filter(Boolean);
   const hasPages = Object.keys(pagesById).length > 0;
 
@@ -80,15 +82,16 @@ export const Sidebar = forwardRef<HTMLInputElement, SidebarProps>(function Sideb
           <span className="sidebar__section-label">Search results</span>
           <div className="search-results">
             {searchResults.length > 0 ? (
-              searchResults.map((page) => (
+              searchResults.map((result) => (
                 <button
-                  key={page.id}
+                  key={result.page.id}
                   type="button"
-                  className={`search-result ${page.id === activePageId ? 'search-result--active' : ''}`}
-                  onClick={() => onSelectPage(page.id)}
+                  className={`search-result ${result.page.id === activePageId ? 'search-result--active' : ''}`}
+                  onClick={() => onSelectPage(result.page.id)}
                 >
-                  <span className="search-result__title">{page.title}</span>
-                  <span className="search-result__path">{buildPagePath(page.id, pagesById).join(' / ')}</span>
+                  <span className="search-result__title">{result.page.title}</span>
+                  <span className="search-result__path">{result.path.join(' / ')}</span>
+                  <span className="search-result__preview">{result.preview}</span>
                 </button>
               ))
             ) : (

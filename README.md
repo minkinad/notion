@@ -40,7 +40,7 @@ The current implementation is optimized for:
 
 - Custom desktop shell and title bar
 - Nested pages and recent documents
-- Search-first sidebar
+- Search-first sidebar with title, path, and content matches
 - Block editor with slash commands
 - Drag and drop blocks
 - Undo and redo

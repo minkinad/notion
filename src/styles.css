@@ -243,6 +243,7 @@ textarea {
 
 .search-field span,
 .search-result__path,
+.search-result__preview,
 .editor-pane__meta,
 .empty-state__description,
 .slash-menu__description {
@@ -316,6 +317,13 @@ textarea {
 .search-result__title {
   font-size: 14px;
   text-align: left;
+}
+
+.search-result__preview {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .page-tree-item__input {

@@ -57,3 +57,12 @@ export interface PageTreeNode {
   page: PageRecord;
   children: PageTreeNode[];
 }
+
+export type PageSearchMatch = 'title' | 'path' | 'content';
+
+export interface PageSearchResult {
+  page: PageRecord;
+  path: string[];
+  matchedIn: PageSearchMatch;
+  preview: string;
+}
