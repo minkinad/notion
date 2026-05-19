@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { PageTreeNode } from '../../types/domain';
 
@@ -25,6 +25,12 @@ export function PageTreeItem({
   const [draftTitle, setDraftTitle] = useState(node.page.title);
 
   const isActive = activePageId === node.page.id;
+
+  useEffect(() => {
+    if (!isEditing) {
+      setDraftTitle(node.page.title);
+    }
+  }, [isEditing, node.page.title]);
 
   return (
     <div className="page-tree-item">

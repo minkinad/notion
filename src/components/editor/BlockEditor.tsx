@@ -128,12 +128,20 @@ export function BlockEditor({ pageId, blocks, onBlocksChange }: BlockEditorProps
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>, block: BlockRecord) => {
     if (slashQuery !== null && focusedBlockId === block.id) {
       if (event.key === 'ArrowDown') {
+        if (slashItems.length === 0) {
+          return;
+        }
+
         event.preventDefault();
         setSlashActiveIndex((current) => Math.min(current + 1, slashItems.length - 1));
         return;
       }
 
       if (event.key === 'ArrowUp') {
+        if (slashItems.length === 0) {
+          return;
+        }
+
         event.preventDefault();
         setSlashActiveIndex((current) => Math.max(current - 1, 0));
         return;
@@ -158,6 +166,10 @@ export function BlockEditor({ pageId, blocks, onBlocksChange }: BlockEditorProps
       event.preventDefault();
 
       if (slashQuery !== null) {
+        if (slashItems.length === 0) {
+          return;
+        }
+
         convertBlock(block.id, slashItems[slashActiveIndex]?.type ?? 'text');
         return;
       }

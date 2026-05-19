@@ -140,5 +140,9 @@ test('searchPages matches title, path, and content with sensible ranking', () =>
 });
 
 test('pickNextActivePageId returns another available page', () => {
-  assert.equal(pickNextActivePageId('root', pages), 'child-a');
+  assert.equal(pickNextActivePageId(['root'], pages), 'child-a');
+});
+
+test('pickNextActivePageId skips descendants scheduled for deletion', () => {
+  assert.equal(pickNextActivePageId(['child-a', 'grandchild'], pages), 'root');
 });

@@ -44,11 +44,12 @@ export function getDescendantPageIds(
 }
 
 export function pickNextActivePageId(
-  pageId: string,
+  excludedPageIds: string[],
   pagesById: Record<string, PageRecord>,
 ): string | null {
+  const excluded = new Set(excludedPageIds);
   const remaining = Object.values(pagesById)
-    .filter((page) => page.id !== pageId)
+    .filter((page) => !excluded.has(page.id))
     .sort(sortPages);
 
   return remaining[0]?.id ?? null;
