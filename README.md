@@ -1,4 +1,4 @@
-# Noir Note
+# Notion
 
 [![CI](https://github.com/minkinad/notion/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/minkinad/notion/actions/workflows/ci.yml)
 ![Tauri](https://img.shields.io/badge/Tauri-2-black)
