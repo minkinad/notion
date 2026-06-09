@@ -377,6 +377,7 @@ export function useWorkspace() {
     pendingBlockSavesRef.current.set(pageId, cloneBlocks(blocks));
 
     const timeoutId = window.setTimeout(() => {
+      blockSaveTimeoutsRef.current.delete(pageId);
       void flushBlockPersist(pageId);
     }, 320);
 
@@ -425,6 +426,7 @@ export function useWorkspace() {
     pendingTitleSavesRef.current.set(pageId, title.trim() || 'Untitled');
 
     const timeoutId = window.setTimeout(() => {
+      titleSaveTimeoutsRef.current.delete(pageId);
       void flushTitlePersist(pageId);
     }, 220);
 

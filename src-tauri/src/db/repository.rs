@@ -72,23 +72,29 @@ impl Database {
         parent_id: Option<String>,
         title: Option<String>,
     ) -> AppResult<CreatePageResponse> {
-        let conn = self.connection()?;
+        let mut conn = self.connection()?;
+        if let Some(parent_id) = parent_id.as_deref() {
+            ensure_page_exists(&conn, parent_id)?;
+        }
+
         let now = timestamp();
         let page_id = new_id();
         let block_id = new_id();
-        let page_title = title.unwrap_or_else(|| "Untitled".to_string());
+        let page_title = normalize_page_title(title.as_deref());
         let position = next_page_position(&conn, parent_id.as_deref())?;
+        let tx = conn.transaction()?;
 
-        conn.execute(
+        tx.execute(
             "INSERT INTO pages (id, parent_id, title, position, created_at, updated_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6);",
             params![&page_id, &parent_id, &page_title, position, &now, &now],
         )?;
-        conn.execute(
+        tx.execute(
             "INSERT INTO blocks (id, page_id, type, content, checked, position, created_at, updated_at)
              VALUES (?1, ?2, 'text', '', 0, 0, ?3, ?4);",
             params![&block_id, &page_id, &now, &now],
         )?;
+        tx.commit()?;
 
         Ok(CreatePageResponse {
             page: PageRecord {
@@ -115,12 +121,15 @@ impl Database {
     pub fn rename_page(&self, page_id: &str, title: &str) -> AppResult<PageRecord> {
         let conn = self.connection()?;
         let updated_at = timestamp();
-        conn.execute(
+        let changed = conn.execute(
             "UPDATE pages
              SET title = ?2, updated_at = ?3
              WHERE id = ?1;",
-            params![page_id, title.trim(), &updated_at],
+            params![page_id, normalize_page_title(Some(title)), &updated_at],
         )?;
+        if changed == 0 {
+            return Err(page_not_found(page_id));
+        }
 
         self.load_page(&conn, page_id)?
             .ok_or_else(|| AppError::InvalidState(format!("page {} not found", page_id)))
@@ -128,7 +137,10 @@ impl Database {
 
     pub fn delete_page(&self, page_id: &str) -> AppResult<()> {
         let conn = self.connection()?;
-        conn.execute("DELETE FROM pages WHERE id = ?1;", [page_id])?;
+        let changed = conn.execute("DELETE FROM pages WHERE id = ?1;", [page_id])?;
+        if changed == 0 {
+            return Err(page_not_found(page_id));
+        }
         Ok(())
     }
 
@@ -137,6 +149,7 @@ impl Database {
         let tx = conn.transaction()?;
         let now = timestamp();
 
+        ensure_page_exists(&tx, page_id)?;
         tx.execute("DELETE FROM blocks WHERE page_id = ?1;", [page_id])?;
 
         let mut saved = Vec::with_capacity(blocks.len());
@@ -190,10 +203,23 @@ impl Database {
 
     pub fn update_workspace_context(&self, input: WorkspaceContextInput) -> AppResult<()> {
         let conn = self.connection()?;
-        self.set_setting_json(&conn, "recent_page_ids", &input.recent_page_ids)?;
+        let recent_page_ids = existing_page_ids(
+            &conn,
+            input
+                .recent_page_ids
+                .iter()
+                .map(String::as_str)
+                .take(RECENT_PAGE_LIMIT),
+        )?;
+        self.set_setting_json(&conn, "recent_page_ids", &recent_page_ids)?;
 
-        if let Some(page_id) = input.active_page_id {
-            self.set_setting_string(&conn, "last_open_page_id", &page_id)?;
+        match input.active_page_id {
+            Some(page_id) if page_exists(&conn, &page_id)? => {
+                self.set_setting_string(&conn, "last_open_page_id", &page_id)?;
+            }
+            _ => {
+                self.delete_setting(&conn, "last_open_page_id")?;
+            }
         }
 
         Ok(())
@@ -315,6 +341,11 @@ impl Database {
         let payload = serde_json::to_string(value)?;
         self.set_setting_string(conn, key, &payload)
     }
+
+    fn delete_setting(&self, conn: &Connection, key: &str) -> AppResult<()> {
+        conn.execute("DELETE FROM settings WHERE key = ?1;", [key])?;
+        Ok(())
+    }
 }
 
 fn timestamp() -> String {
@@ -328,6 +359,49 @@ fn new_id() -> String {
         Utc::now().timestamp_nanos_opt().unwrap_or_default(),
         counter
     )
+}
+
+fn normalize_page_title(title: Option<&str>) -> String {
+    let trimmed = title.unwrap_or_default().trim();
+    if trimmed.is_empty() {
+        "Untitled".to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+fn page_not_found(page_id: &str) -> AppError {
+    AppError::InvalidState(format!("page {} not found", page_id))
+}
+
+fn page_exists(conn: &Connection, page_id: &str) -> AppResult<bool> {
+    let exists = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM pages WHERE id = ?1);",
+        [page_id],
+        |row| row.get::<_, i64>(0),
+    )?;
+    Ok(exists == 1)
+}
+
+fn ensure_page_exists(conn: &Connection, page_id: &str) -> AppResult<()> {
+    if page_exists(conn, page_id)? {
+        Ok(())
+    } else {
+        Err(page_not_found(page_id))
+    }
+}
+
+fn existing_page_ids<'a>(
+    conn: &Connection,
+    page_ids: impl IntoIterator<Item = &'a str>,
+) -> AppResult<Vec<String>> {
+    let mut existing = Vec::new();
+    for page_id in page_ids {
+        if page_exists(conn, page_id)? && !existing.iter().any(|item| item == page_id) {
+            existing.push(page_id.to_string());
+        }
+    }
+    Ok(existing)
 }
 
 fn next_page_position(conn: &Connection, parent_id: Option<&str>) -> AppResult<i64> {
