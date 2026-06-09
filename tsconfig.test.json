@@ -18,6 +18,7 @@
     "src/services/editorCatalog.ts",
     "src/services/editorHistory.ts",
     "src/services/pageTree.ts",
+    "src/services/workspaceState.ts",
     "src/utils/blocks.ts",
     "src/types/domain.ts"
   ]
