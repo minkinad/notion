@@ -2,6 +2,7 @@ import { useCallback, useEffect, useReducer, useRef } from 'react';
 
 import type { BlockRecord } from '../types/domain';
 import { createEmptyHistory, redoHistory, undoHistory } from '../services/editorHistory';
+import { LatestWriteQueue } from '../services/latestWriteQueue';
 import { getDescendantPageIds, pickNextActivePageId } from '../services/pageTree';
 import {
   bootstrapWorkspace,
@@ -14,24 +15,62 @@ import {
 import { initialWorkspaceState, workspaceReducer } from '../services/workspaceState';
 import { cloneBlocks, normalizeBlockPositions, toBlockInputs } from '../utils/blocks';
 
-function clearTimeoutMap(timeouts: Map<string, number>): void {
-  for (const timeoutId of timeouts.values()) {
-    window.clearTimeout(timeoutId);
+const BLOCK_SAVE_DELAY_MS = 320;
+const TITLE_SAVE_DELAY_MS = 220;
+
+type WorkspaceWrite =
+  | { kind: 'blocks'; pageId: string; blocks: BlockRecord[] }
+  | { kind: 'title'; pageId: string; title: string };
+
+function persistenceKey(kind: WorkspaceWrite['kind'], pageId: string): string {
+  return `${kind}:${pageId}`;
+}
+
+function copyWorkspaceWrite(write: WorkspaceWrite): WorkspaceWrite {
+  return write.kind === 'blocks' ? { ...write, blocks: cloneBlocks(write.blocks) } : { ...write };
+}
+
+async function persistWorkspaceWrite(write: WorkspaceWrite): Promise<void> {
+  if (write.kind === 'blocks') {
+    await savePageBlocksRequest(write.pageId, toBlockInputs(write.blocks));
+    return;
   }
-  timeouts.clear();
+
+  await renamePageRequest(write.pageId, write.title);
 }
 
 export function useWorkspace() {
   const [state, dispatch] = useReducer(workspaceReducer, initialWorkspaceState);
-  const blockSaveTimeoutsRef = useRef(new Map<string, number>());
-  const pendingBlockSavesRef = useRef(new Map<string, BlockRecord[]>());
-  const blockSavesInFlightRef = useRef(new Set<string>());
-  const titleSaveTimeoutsRef = useRef(new Map<string, number>());
-  const pendingTitleSavesRef = useRef(new Map<string, string>());
-  const titleSavesInFlightRef = useRef(new Set<string>());
   const activePageIdsRef = useRef(new Set<string>());
+  const persistenceQueueRef = useRef<LatestWriteQueue<WorkspaceWrite> | null>(null);
 
   useEffect(() => {
+    const persistenceQueue = new LatestWriteQueue<WorkspaceWrite>({
+      write: persistWorkspaceWrite,
+      copy: copyWorkspaceWrite,
+      onError: (error, write) => {
+        if (!activePageIdsRef.current.has(write.pageId)) {
+          return;
+        }
+
+        dispatch({
+          type: 'set-save-error',
+          payload:
+            error instanceof Error
+              ? error.message
+              : write.kind === 'blocks'
+                ? 'Failed to save blocks'
+                : 'Failed to rename page',
+        });
+      },
+      onIdle: (hasErrors) => {
+        if (!hasErrors) {
+          dispatch({ type: 'set-save-state', payload: 'saved' });
+        }
+      },
+    });
+    persistenceQueueRef.current = persistenceQueue;
+
     bootstrapWorkspace()
       .then((snapshot) => {
         dispatch({ type: 'hydrate', payload: snapshot });
@@ -44,12 +83,10 @@ export function useWorkspace() {
       });
 
     return () => {
-      clearTimeoutMap(blockSaveTimeoutsRef.current);
-      clearTimeoutMap(titleSaveTimeoutsRef.current);
-      pendingBlockSavesRef.current.clear();
-      pendingTitleSavesRef.current.clear();
-      blockSavesInFlightRef.current.clear();
-      titleSavesInFlightRef.current.clear();
+      persistenceQueue.dispose();
+      if (persistenceQueueRef.current === persistenceQueue) {
+        persistenceQueueRef.current = null;
+      }
     };
   }, []);
 
@@ -72,121 +109,26 @@ export function useWorkspace() {
     return () => window.clearTimeout(timeoutId);
   }, [state.activePageId, state.recentPageIds, state.status]);
 
-  const flushBlockPersist = useCallback(async (pageId: string) => {
-    if (blockSavesInFlightRef.current.has(pageId)) {
-      return;
-    }
-
-    const pendingBlocks = pendingBlockSavesRef.current.get(pageId);
-    if (!pendingBlocks) {
-      return;
-    }
-
-    pendingBlockSavesRef.current.delete(pageId);
-    blockSavesInFlightRef.current.add(pageId);
-
-    try {
-      await savePageBlocksRequest(pageId, toBlockInputs(pendingBlocks));
-      if (activePageIdsRef.current.has(pageId) && !pendingBlockSavesRef.current.has(pageId)) {
-        dispatch({ type: 'set-save-state', payload: 'saved' });
-      }
-    } catch (error) {
-      if (activePageIdsRef.current.has(pageId)) {
-        dispatch({
-          type: 'set-save-error',
-          payload: error instanceof Error ? error.message : 'Failed to save blocks',
-        });
-      }
-    } finally {
-      blockSavesInFlightRef.current.delete(pageId);
-      if (pendingBlockSavesRef.current.has(pageId)) {
-        void flushBlockPersist(pageId);
-      }
-    }
-  }, []);
-
   const scheduleBlockPersist = useCallback((pageId: string, blocks: BlockRecord[]) => {
-    const activeTimeout = blockSaveTimeoutsRef.current.get(pageId);
-    if (activeTimeout) {
-      window.clearTimeout(activeTimeout);
-    }
-
-    pendingBlockSavesRef.current.set(pageId, cloneBlocks(blocks));
-
-    const timeoutId = window.setTimeout(() => {
-      blockSaveTimeoutsRef.current.delete(pageId);
-      void flushBlockPersist(pageId);
-    }, 320);
-
-    blockSaveTimeoutsRef.current.set(pageId, timeoutId);
-  }, [flushBlockPersist]);
-
-  const flushTitlePersist = useCallback(async (pageId: string) => {
-    if (titleSavesInFlightRef.current.has(pageId)) {
-      return;
-    }
-
-    const pendingTitle = pendingTitleSavesRef.current.get(pageId);
-    if (!pendingTitle) {
-      return;
-    }
-
-    pendingTitleSavesRef.current.delete(pageId);
-    titleSavesInFlightRef.current.add(pageId);
-
-    try {
-      await renamePageRequest(pageId, pendingTitle);
-      if (activePageIdsRef.current.has(pageId) && !pendingTitleSavesRef.current.has(pageId)) {
-        dispatch({ type: 'set-save-state', payload: 'saved' });
-      }
-    } catch (error) {
-      if (activePageIdsRef.current.has(pageId)) {
-        dispatch({
-          type: 'set-save-error',
-          payload: error instanceof Error ? error.message : 'Failed to rename page',
-        });
-      }
-    } finally {
-      titleSavesInFlightRef.current.delete(pageId);
-      if (pendingTitleSavesRef.current.has(pageId)) {
-        void flushTitlePersist(pageId);
-      }
-    }
+    persistenceQueueRef.current?.schedule(
+      persistenceKey('blocks', pageId),
+      { kind: 'blocks', pageId, blocks },
+      BLOCK_SAVE_DELAY_MS,
+    );
   }, []);
 
   const scheduleTitlePersist = useCallback((pageId: string, title: string) => {
-    const activeTimeout = titleSaveTimeoutsRef.current.get(pageId);
-    if (activeTimeout) {
-      window.clearTimeout(activeTimeout);
-    }
-
-    pendingTitleSavesRef.current.set(pageId, title.trim() || 'Untitled');
-
-    const timeoutId = window.setTimeout(() => {
-      titleSaveTimeoutsRef.current.delete(pageId);
-      void flushTitlePersist(pageId);
-    }, 220);
-
-    titleSaveTimeoutsRef.current.set(pageId, timeoutId);
-  }, [flushTitlePersist]);
+    persistenceQueueRef.current?.schedule(
+      persistenceKey('title', pageId),
+      { kind: 'title', pageId, title: title.trim() || 'Untitled' },
+      TITLE_SAVE_DELAY_MS,
+    );
+  }, []);
 
   const clearPagePersistence = useCallback((pageIds: string[]) => {
-    for (const pageId of pageIds) {
-      const blockTimeout = blockSaveTimeoutsRef.current.get(pageId);
-      if (blockTimeout) {
-        window.clearTimeout(blockTimeout);
-        blockSaveTimeoutsRef.current.delete(pageId);
-      }
-
-      const titleTimeout = titleSaveTimeoutsRef.current.get(pageId);
-      if (titleTimeout) {
-        window.clearTimeout(titleTimeout);
-        titleSaveTimeoutsRef.current.delete(pageId);
-      }
-
-      pendingBlockSavesRef.current.delete(pageId);
-      pendingTitleSavesRef.current.delete(pageId);
-    }
+    persistenceQueueRef.current?.cancel(
+      pageIds.flatMap((pageId) => [persistenceKey('blocks', pageId), persistenceKey('title', pageId)]),
+    );
   }, []);
 
   const setActivePage = useCallback((pageId: string | null) => {
