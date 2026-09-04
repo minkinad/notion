@@ -33,7 +33,7 @@
     "active": true,
     "targets": "all",
     "publisher": "minkinad",
-    "homepage": "https://github.com/minkinad/notion",
+    "homepage": "https://github.com/minkinad/noir-note",
     "category": "Productivity",
     "shortDescription": "Minimalist local-first knowledge workspace for notes and documents.",
     "longDescription": "Noir Note is a desktop-first knowledge workspace with nested pages, a block editor, autosave, local SQLite persistence, and a strict black-and-white interface designed for focused writing and serious knowledge work.",

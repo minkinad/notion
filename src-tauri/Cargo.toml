@@ -2,8 +2,10 @@
 name = "noir_note"
 version = "0.1.0"
 description = "Minimal desktop workspace for notes and documents"
-authors = ["OpenAI Codex"]
+authors = ["Aleksandr Minkin"]
 edition = "2021"
+license = "MIT"
+repository = "https://github.com/minkinad/noir-note"
 
 [lib]
 name = "noir_note_lib"
