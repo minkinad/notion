@@ -1,199 +1,197 @@
-# Notion
+<div align="center">
+  <img src="src-tauri/icons/app-icon.svg" width="128" alt="Noir Note logo" />
+  <h1>Noir Note</h1>
+  <p><strong>Минималистичное local-first пространство для заметок и структурированных документов.</strong></p>
+  <p>Tauri desktop · React · TypeScript · Rust · SQLite</p>
 
-[![CI](https://github.com/minkinad/notion/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/minkinad/notion/actions/workflows/ci.yml)
-![Tauri](https://img.shields.io/badge/Tauri-2-black)
-![React](https://img.shields.io/badge/React-19-black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-black)
-![SQLite](https://img.shields.io/badge/SQLite-local-black)
+  <p>
+    <a href="https://github.com/minkinad/noir-note/actions/workflows/ci.yml"><img src="https://github.com/minkinad/noir-note/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
+    <a href="https://github.com/minkinad/noir-note/actions/workflows/windows-build.yml"><img src="https://github.com/minkinad/noir-note/actions/workflows/windows-build.yml/badge.svg?branch=main" alt="Windows build" /></a>
+    <img src="https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white" alt="Tauri 2" />
+    <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" alt="TypeScript strict" />
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-111111" alt="MIT license" /></a>
+  </p>
 
-Desktop-first local workspace in the spirit of Notion: strict, minimal, offline-first, and built for serious writing and knowledge work.
+  <p>
+    <a href="#quick-start">Быстрый старт</a> ·
+    <a href="#features">Возможности</a> ·
+    <a href="#architecture">Архитектура</a> ·
+    <a href="#data-and-privacy">Данные</a> ·
+    <a href="#quality">Качество</a> ·
+    <a href="docs/README.md">Документация</a>
+  </p>
+</div>
 
-## Overview
+---
 
-Noir Note is a native desktop knowledge workspace with a custom Tauri shell, a block editor, nested pages, local SQLite persistence, and a structure that can grow toward sync, accounts, collaboration, exports, and plugins.
+Noir Note — нативное desktop-приложение для спокойной работы с личными знаниями. Оно объединяет
+иерархию страниц, блочный редактор, быстрый локальный поиск и SQLite-хранилище в компактной оболочке
+без аккаунта, облачного сервиса и обязательного подключения к сети.
 
-The current implementation is optimized for:
+> **Статус:** активная разработка (`0.1.x`). Основной сценарий уже работает, однако форматы данных и
+> UX могут меняться. До появления встроенного экспорта регулярно создавайте резервную копию файла
+> workspace. Синхронизация между устройствами и шифрование at rest пока не реализованы.
 
-- fast local startup;
-- keyboard-first editing;
-- low visual noise;
-- predictable persistence;
-- clear separation between shell, UI, editor logic, and data layer.
+<a id="features"></a>
 
-## Stack
+## Возможности
 
-- Tauri 2
-- React 19
-- TypeScript
-- SQLite via `rusqlite`
+| Область | Что реализовано |
+| --- | --- |
+| Документы | Вложенные страницы, переименование, удаление поддерева и список недавних страниц |
+| Редактор | Text, heading, to-do, list, quote, code и divider blocks |
+| Навигация | Поиск по заголовку, пути и содержимому; keyboard-first команды |
+| Редактирование | Slash menu, drag-and-drop, undo/redo и перемещение с клавиатуры |
+| Сохранение | Debounced autosave с сериализацией записей и моделью latest-write-wins |
+| Хранилище | Локальная SQLite, WAL, foreign keys и последовательные schema migrations |
+| Desktop | Кастомный title bar, восстановление размера/позиции окна, Windows NSIS и MSI bundles |
 
-## Product scope
+### Горячие клавиши
 
-- Native desktop window for macOS, Windows, and Linux via Tauri
-- Custom title bar and local-first workflow
-- Sidebar with nested pages, search, and recent documents
-- Block editor with slash commands, drag and drop, undo/redo, and autosave
-- SQLite storage with migrations and repository-style data access
-- Window state persistence and last-opened document restore
+| Комбинация | Действие |
+| --- | --- |
+| `Ctrl/Cmd + K` | Перейти к поиску |
+| `Ctrl/Cmd + N` | Создать страницу рядом с текущей |
+| `Ctrl/Cmd + Z` | Отменить изменение |
+| `Ctrl/Cmd + Shift + Z` | Повторить изменение |
+| `/` | Открыть каталог блоков |
+| `Alt/Cmd + ↑/↓` | Переместить блок |
+| `Ctrl/Cmd + Enter` | Выйти из code block в новый блок |
 
-## Features
+<a id="architecture"></a>
 
-- Custom desktop shell and title bar
-- Nested pages and recent documents
-- Search-first sidebar with title, path, and content matches
-- Block editor with slash commands
-- Drag and drop blocks
-- Undo and redo
-- Local SQLite persistence with migrations
-- Last opened page persistence
-- Native window state persistence
+## Архитектура
 
-## Architecture
+```mermaid
+flowchart LR
+  User[Пользователь] --> UI[React в Tauri WebView]
+  UI -->|typed invoke commands| Core[Rust application core]
+  Core --> Repo[Repository boundary]
+  Repo --> DB[(SQLite workspace)]
+  Core --> Window[Native window state]
+```
 
-Frontend:
-
-- `src/components`: desktop UI, editor, sidebar, and empty states
-- `src/hooks`: workspace orchestration, hotkeys, and window state persistence
-- `src/services`: pure logic for page tree, editor history, slash catalog, and Tauri bridge
-- `src/types`: strict domain models
-- `src/utils`: editor and block helpers
-
-Desktop and persistence:
-
-- `src-tauri/src/lib.rs`: Tauri bootstrap and command registration
-- `src-tauri/src/db`: SQLite migrations and repository layer
-- `src-tauri/migrations`: schema migrations for `pages`, `blocks`, and `settings`
-
-This split is intentional: UI remains replaceable, editor logic stays mostly pure, and the data layer is already shaped for future sync and account-backed storage.
-
-## Project structure
+Проект разделён на UI и desktop core. React отвечает за представление, локальную editor history и
+оркестрацию autosave. Tauri-команды образуют узкую границу между TypeScript и Rust. Rust проверяет
+состояние, выполняет транзакции и остаётся единственным владельцем SQLite.
 
 ```text
-.
-├── src
-│   ├── components
-│   ├── hooks
-│   ├── services
-│   ├── types
-│   └── utils
-├── src-tauri
-│   ├── migrations
-│   └── src
-│       └── db
-├── tests
-└── .github/workflows
+noir-note/
+├── src/
+│   ├── components/         React UI и block editor
+│   ├── hooks/              Workspace orchestration и desktop hooks
+│   ├── services/           Pure state, search, history и persistence queue
+│   ├── types/              Общий frontend domain contract
+│   └── utils/              Block helpers
+├── src-tauri/
+│   ├── migrations/         Append-only SQLite migrations
+│   └── src/                Tauri commands и repository layer
+├── tests/                  Node-based unit tests
+└── docs/                   Architecture, ADR и operations guide
 ```
 
-## Development
+Подробности: [Architecture](docs/ARCHITECTURE.md) · [ADR](docs/adr/README.md) ·
+[Operations runbook](docs/operations/runbook.md).
 
-Install dependencies:
+<a id="quick-start"></a>
 
-```bash
-npm install
-```
+## Быстрый старт
 
-Run the frontend only:
+### Требования
 
-```bash
-npm run dev
-```
-
-Run the desktop app:
+- Node.js 22 и npm;
+- Rust stable toolchain;
+- [системные зависимости Tauri 2](https://v2.tauri.app/start/prerequisites/) для вашей ОС.
 
 ```bash
+git clone https://github.com/minkinad/noir-note.git
+cd noir-note
+npm ci
 npm run tauri:dev
 ```
 
-## Quality checks
+Для разработки только frontend можно запустить `npm run dev`, но операции с workspace требуют
+Tauri runtime и не работают как самостоятельное web-приложение.
 
-Typecheck, tests, and production frontend build:
+### Linux (Debian/Ubuntu)
 
 ```bash
-npm run check
+sudo apt-get update
+sudo apt-get install -y \
+  pkg-config \
+  libgtk-3-dev \
+  libwebkit2gtk-4.1-dev \
+  librsvg2-dev \
+  patchelf
 ```
 
-Run local quality checks:
+### Основные команды
 
 ```bash
+npm run tauri:dev       # desktop development
+npm run check           # typecheck, unit tests, frontend production build
+npm run tauri:build     # native bundle for the current platform
+
 cargo fmt --manifest-path src-tauri/Cargo.toml --check
+cargo check --manifest-path src-tauri/Cargo.toml
 ```
 
-## Production build
+Инструкции по окружению и устройству тестов находятся в
+[Development guide](docs/DEVELOPMENT.md).
 
-```bash
-npm run tauri:build
-```
+<a id="data-and-privacy"></a>
 
-Windows installers from a Windows machine:
+## Данные и приватность
 
-```bash
-npm run tauri:build:windows
-```
+- Заметки хранятся только в `workspace.sqlite3` внутри platform-specific app data directory.
+- Приложение не требует аккаунта и не отправляет содержимое в удалённый сервис.
+- База не зашифрована: защита устройства, учётной записи ОС и диска остаётся ответственностью
+  пользователя.
+- Удаление страницы каскадно удаляет вложенные страницы и их блоки.
+- Перед обновлением и при важных изменениях рекомендуется закрыть приложение и скопировать каталог
+  `data` целиком.
 
-Windows NSIS installer only:
+Пошаговые backup/restore и диагностика описаны в
+[operations runbook](docs/operations/runbook.md). О найденных уязвимостях сообщайте по инструкции из
+[SECURITY.md](SECURITY.md), а не через публичный issue.
 
-```bash
-npm run tauri:build:windows:nsis
-```
+<a id="quality"></a>
 
-CI runs:
+## Quality gates
 
-- `npm run check`
-- `cargo fmt --check`
-- `cargo check`
+На каждый push в `main` и pull request CI выполняет:
 
-Release automation:
+- strict TypeScript typecheck;
+- unit tests для block helpers, editor history, page tree, workspace state и persistence queue;
+- production frontend build;
+- `cargo fmt --check` и `cargo check`;
+- сборку Windows NSIS bundle в отдельном workflow.
 
-- `.github/workflows/windows-build.yml`: validates that the app bundles on Windows
-- `.github/workflows/windows-release.yml`: creates draft Windows releases from `v*` tags
+Release workflow создаёт draft GitHub Release и собирает NSIS/MSI installers для тегов `v*`.
+Публичный production-релиз дополнительно требует code signing, smoke test и проверку backup/restore;
+см. [release checklist](docs/operations/runbook.md#release-checklist).
 
-## Keyboard UX
+## Ограничения и roadmap
 
-- `Ctrl/Cmd + K`: focus page search
-- `Ctrl/Cmd + N`: create page
-- `Ctrl/Cmd + Z`: undo
-- `Ctrl/Cmd + Shift + Z`: redo
-- `Type /`: open block command flow
-- `Alt + ArrowUp/ArrowDown`: move block
+Сейчас Noir Note — single-device приложение. Ещё не реализованы:
 
-## Data model
+- Markdown/PDF export и импорт;
+- синхронизация, аккаунты и совместное редактирование;
+- шифрование workspace на уровне приложения;
+- структурное drag-and-drop для дерева страниц;
+- подписанные installers и автообновление;
+- plugin/command API.
 
-SQLite tables:
+Эти пункты — направление развития, а не обещание совместимости или сроков.
 
-- `pages`: tree structure, order, timestamps
-- `blocks`: page-scoped ordered content blocks
-- `settings`: recent pages, last opened page, and app-level state
+## Поддержка проекта
 
-This keeps the local model simple while leaving room for:
+- Ошибка или feature request: используйте [GitHub Issues](https://github.com/minkinad/noir-note/issues)
+  и подходящий шаблон.
+- Вопрос по запуску или восстановлению данных: сначала проверьте [SUPPORT.md](SUPPORT.md).
+- Уязвимость: следуйте [SECURITY.md](SECURITY.md).
+- Нормы общения: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
-- authentication and remote identities;
-- cloud sync;
-- real-time collaboration;
-- permissions;
-- exports to Markdown/PDF;
-- plugin hooks;
-- database-style views.
+## Лицензия
 
-## Linux prerequisites
-
-Tauri on Linux needs system packages for GTK/WebKit and `pkg-config`.
-Typical Debian/Ubuntu setup:
-
-```bash
-sudo apt install pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev patchelf
-```
-
-## Roadmap
-
-- page tree reordering and structural drag and drop
-- markdown and PDF export
-- sync engine and account layer
-- collaboration-ready document operations
-- plugin and command extension points
-
-## Windows distribution notes
-
-- The repository is configured to ship Windows installers via both `NSIS` (`-setup.exe`) and `WiX` (`.msi`).
-- NSIS is configured for `currentUser` installs to reduce elevation friction.
-- WiX uses a fixed `upgradeCode`, so future releases upgrade in place instead of installing as a separate app.
-- WebView2 is bundled via the embedded bootstrapper mode, which avoids a hard dependency on a live internet connection during install while keeping installer size reasonable.
+Исходный код распространяется по лицензии [MIT](LICENSE).
